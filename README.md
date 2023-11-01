@@ -1,5 +1,13 @@
 # Instructions
 
+Web app: https://github.com/minhn4/webapp
+
+## Postgres
+
+`docker pull postgres:16-alpine`
+
+`docker run --name backend-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -d postgres:16-alpine`
+
 ## Compile Python to binary (shared object)
 
 This Python script minifies all `.py` files and compiles them to binary files (`.so`) recursively.

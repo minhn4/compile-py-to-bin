@@ -2,21 +2,45 @@
 
 Web app: https://github.com/minhn4/webapp
 
-## Init
-
-`pip3 install Django django-environ "psycopg[binary]" hvac cython python-minifier`
-
-`pip3 freeze > requirements.txt`
-
 ## Postgres setup
 
-`pip3 install "psycopg[binary]"`
+Pull and run:
 
 `docker pull postgres:16-alpine`
 
 `docker run --name backend-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=postgres -p 5432:5432 -d postgres:16-alpine`
 
+Stop and restart:
+
+`docker stop backend-postgres`
+
 `docker restart backend-postgres`
+
+## Virtual environment
+
+Create and activate a venv:
+
+`python3 -m venv venv`
+
+`source venv/bin/activate`
+
+Django setup:
+
+`pip3 install -r requirements.txt`
+
+`python3 manage.py migrate`
+
+`python3 manage.py runserver`
+
+Deactivate venv:
+
+`deactivate`
+
+## Init
+
+`pip3 install Django django-environ "psycopg[binary]" hvac cython python-minifier`
+
+`pip3 freeze > requirements.txt`
 
 ## Standalone run
 

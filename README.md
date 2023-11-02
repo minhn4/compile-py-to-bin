@@ -18,7 +18,7 @@ Stop and restart:
 
 `docker restart backend-postgres`
 
-psql
+psql:
 
 `psql -h localhost -p 5432 -U <YOUR_POSTGRES_USER> -d <YOUR_POSTGRES_DB_NAME> -c '\dt'`
 

@@ -3,11 +3,18 @@ Author: Minh Nguyen
 Date: Oct 2023
 
 This Python script migrates all env vars from .env file to Vault.
-This file contains Vault root token as raw text; DELETE this file after you are done.
+This file might contain Vault root token as raw text; DELETE this file after you are done.
+
+Export env vars:
+export VAULT_TOKEN=<YOUR_VAULT_TOKEN>
+export VAULT_ADDR=<YOUR_VAULT_ADDRESS>
 
 Run:
 pip3 install hvac
 python3 migrate_to_vault.py
+
+Unset env vars upon finish:
+unset VAULT_TOKEN VAULT_ADDR
 '''
 
 import os
@@ -33,24 +40,21 @@ for line in env_lines:
     env_vars[key] = value
 
 # Authenticate with Vault
-vault_url = "http://127.0.0.1:8200"  # Replace with your Vault URL
-vault_token = "hvs.LBdO5lFquLh9VEhu8E75KFFc"  # Replace with your Vault token
-
-client = hvac.Client(url=vault_url, token=vault_token)
-
+client = hvac.Client(
+    url=os.environ["VAULT_ADDR"], token=os.environ["VAULT_TOKEN"])
 if not client.is_authenticated():
     print("Vault authentication failed.")
     exit(1)
 
+vault_mount_point = "cmp-backend"
+
 # Write environment variables to Vault's secret storage
-vault_secret_path = "cmp-backend"  # Replace with your desired path in Vault
-
 for key, value in env_vars.items():
+    secret = {}
+    secret[key] = value
     client.secrets.kv.v2.create_or_update_secret(
-        path=vault_secret_path,
-        secret=key,
-        data={"value": value}
+        mount_point=vault_mount_point,
+        path=key,
+        secret=secret,
     )
-    print(f"Variable '{key}' written to Vault.")
-
-print("Environment variables have been successfully moved to Vault.")
+    print(f"Variable '{key}' has been successfully moved to Vault")

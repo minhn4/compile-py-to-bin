@@ -247,8 +247,10 @@ else:
     }
 
 # Task Queue Config
-TASK_WORKER_DISABLED = env("TASK_WORKER_DISABLED", bool, False)
-TASK_REDIS_DATABASE = env("TASK_REDIS_DATABASE", int, 1)
+TASK_WORKER_DISABLED = True if secrets["TASK_WORKER_DISABLED"] else False
+TASK_REDIS_DATABASE = (
+    int(secrets["TASK_REDIS_DATABASE"]) if secrets["TASK_REDIS_DATABASE"] else 1
+)
 if REDIS_USE_SENTINEL:
     CELERY_BROKER_URL = ";".join(
         f"sentinel://{host}:{port}" for host, port in REDIS_SENTINELS

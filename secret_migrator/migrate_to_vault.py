@@ -1,4 +1,4 @@
-'''
+"""
 Author: Minh Nguyen
 Date: Oct 2023
 
@@ -6,8 +6,7 @@ This Python script migrates all env vars from .env file to Vault.
 This file might contain Vault root token as raw text; DELETE this file after you are done.
 
 Export env vars:
-export VAULT_TOKEN=<YOUR_VAULT_TOKEN>
-export VAULT_ADDR=<YOUR_VAULT_ADDRESS>
+export VAULT_TOKEN=<YOUR_VAULT_TOKEN> VAULT_ADDR=https://<YOUR_VAULT_ADDRESS>
 
 Run:
 pip3 install hvac
@@ -15,7 +14,7 @@ python3 migrate_to_vault.py
 
 Unset env vars upon finish:
 unset VAULT_TOKEN VAULT_ADDR
-'''
+"""
 
 import os
 import hvac
@@ -37,23 +36,24 @@ for line in env_lines:
     if not line or line.startswith("#"):
         continue
     key, value = line.split("=", 1)
+    if value == '""':
+        value = ""
     env_vars[key] = value
 
 # Authenticate with Vault
-client = hvac.Client(
-    url=os.environ["VAULT_ADDR"], token=os.environ["VAULT_TOKEN"])
+client = hvac.Client(url=os.environ["VAULT_ADDR"], token=os.environ["VAULT_TOKEN"])
 if not client.is_authenticated():
     print("Vault authentication failed.")
     exit(1)
 
-vault_mount_point = "cmp-backend"
+VAULT_MOUNT_POINT = "cmp-backend"
 
 # Write environment variables to Vault's secret storage
 for key, value in env_vars.items():
     secret = {}
     secret[key] = value
     client.secrets.kv.v2.create_or_update_secret(
-        mount_point=vault_mount_point,
+        mount_point=VAULT_MOUNT_POINT,
         path=key,
         secret=secret,
     )

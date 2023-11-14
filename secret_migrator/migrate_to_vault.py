@@ -20,7 +20,7 @@ import os
 import hvac
 
 # Load environment variables from .env file
-env_file_path = ".env"
+env_file_path = "env"
 
 if not os.path.exists(env_file_path):
     print(f"{env_file_path} does not exist.")
@@ -41,7 +41,8 @@ for line in env_lines:
     env_vars[key] = value
 
 # Authenticate with Vault
-client = hvac.Client(url=os.environ["VAULT_ADDR"], token=os.environ["VAULT_TOKEN"])
+client = hvac.Client(
+    url=os.environ["VAULT_ADDR"], token=os.environ["VAULT_TOKEN"])
 if not client.is_authenticated():
     print("Vault authentication failed.")
     exit(1)

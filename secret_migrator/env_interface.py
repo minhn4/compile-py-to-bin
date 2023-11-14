@@ -2,18 +2,12 @@ from pathlib import Path
 import hvac
 import environ
 
-# Authenticate with Vault
-client = hvac.Client(url="http://localhost:8300/", token="hvs.Y30WrR6bAp7vtpaVBQlueAcn")
-if not client.is_authenticated():
-    print("Vault authentication failed, using .env file instead")
-    exit(1)
-
-    # BASE_DIR = Path(__file__).resolve().parent
-
-    # env = environ.Env()
-    # env.read_env(BASE_DIR / ".env")
-
-else:
+try:
+    # Authenticate with Vault
+    client = hvac.Client(
+        url="http://localhost:8300", token="hvs.oDiyRE4MbsD2QZlAw0gQfGSM"
+    )
+    client.is_authenticated()
     VAULT_MOUNT_POINT = "cmp-backend"
     secrets = {}
 
@@ -29,7 +23,9 @@ else:
                 # Read the value of each secret
                 secret = (
                     client.secrets.kv.v2.read_secret_version(
-                        mount_point=VAULT_MOUNT_POINT, path=key
+                        mount_point=VAULT_MOUNT_POINT,
+                        path=key,
+                        raise_on_deleted_version=True,
                     )["data"]["data"],
                 )
 
@@ -44,18 +40,47 @@ else:
     except hvac.exceptions.VaultError as e:
         print(f"Error listing or reading secrets in Vault: {e}")
 
-    def env(key, val_type, val):
-        if type(val) != val_type:
-            print("error: type mismatch")
-            exit(1)
+    def env(key, val_type=None, val=None):
+        if val_type != None and val == None:
+            print("ImproperlyConfigured")
+            return
 
-        if val_type == str:
-            return secrets[key] if secrets[key] else val
-        if val_type == bool:
-            return True if secrets[key] else False
-        return int(secrets[key]) if secrets[key] else val
+        if key in secrets:
+            if val_type == bool:
+                if secrets[key].lower() == "false":
+                    return False
+                return True
+            return secrets[key]
+
+        return val
+
+except Exception:
+    print("Vault access failed, using .env file instead...")
+    print()
+
+    BASE_DIR = Path(__file__).resolve().parent
+
+    env = environ.Env()
+    env.read_env(BASE_DIR / ".env")
 
 
-print(env("EMAIL_USE_FILE_BACKEND", bool, False))
-print(env("EMAIL_HOST", str, "localhost"))
-print(env("EMAIL_PORT", int, 465))
+foo = env("EMAIL_USE_FILE_BACKEND", bool, False)
+print(foo, type(foo))
+
+# foo = env("EMAIL_HOST", str, "localhost")
+# print(foo, type(foo))
+
+# foo = env("EMAIL_PORT", int, 465)
+# print(foo, type(foo))
+
+# foo = env("EMAIL_PORT", int, True)
+# print(foo, type(foo))
+
+# foo = env("EMAIL_PORT", bool, "465")
+# print(foo, type(foo))
+
+# foo = env("EMAIL_PORT", str, 465)
+# print(foo, type(foo))
+
+# foo = env("xxx", bool, "True")
+# print(foo, type(foo))

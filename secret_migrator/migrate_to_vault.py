@@ -19,8 +19,12 @@ unset VAULT_TOKEN VAULT_ADDR
 import os
 import hvac
 
+VAULT_MOUNT_POINT = "cmp-backend"
+VAULT_ADDR = "http://10.240.201.233:8200"
+VAULT_TOKEN = "hvs.o1G1T8eThhMmGILF0NPl9YFp"
+
 # Load environment variables from .env file
-env_file_path = "env"
+env_file_path = "common.env"
 
 if not os.path.exists(env_file_path):
     print(f"{env_file_path} does not exist.")
@@ -35,19 +39,22 @@ for line in env_lines:
     line = line.strip()
     if not line or line.startswith("#"):
         continue
+
     key, value = line.split("=", 1)
+    print("Parsing: ", key, "from .env")
+
     if value == '""':
         value = ""
+    if value and value[0] == '"' and value[-1] == '"':
+        value = value[1:-1]
     env_vars[key] = value
 
 # Authenticate with Vault
-client = hvac.Client(
-    url=os.environ["VAULT_ADDR"], token=os.environ["VAULT_TOKEN"])
+# client = hvac.Client(url=os.environ["VAULT_ADDR"], token=os.environ["VAULT_TOKEN"])
+client = hvac.Client(url=VAULT_ADDR, token=VAULT_TOKEN)
 if not client.is_authenticated():
     print("Vault authentication failed.")
     exit(1)
-
-VAULT_MOUNT_POINT = "cmp-backend"
 
 # Write environment variables to Vault's secret storage
 for key, value in env_vars.items():

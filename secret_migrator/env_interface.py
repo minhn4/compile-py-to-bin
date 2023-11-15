@@ -2,85 +2,97 @@ from pathlib import Path
 import hvac
 import environ
 
+BASE_DIR = Path(__file__).resolve().parent
+
 try:
-    # Authenticate with Vault
-    client = hvac.Client(
-        url="http://localhost:8300", token="hvs.oDiyRE4MbsD2QZlAw0gQfGSM"
-    )
+    # set mount point to 'cmp-backend' for Vault, set to '' to use .env instead
+    VAULT_MOUNT_POINT = 'cmp-backend-local'
+    VAULT_ADDR = 'http://10.240.201.233:8200'
+    VAULT_TOKEN = 'hvs.o1G1T8eThhMmGILF0NPl9YFp'
+
+    client = hvac.Client(url=VAULT_ADDR, token=VAULT_TOKEN)
     client.is_authenticated()
-    VAULT_MOUNT_POINT = "cmp-backend"
+    response = client.secrets.kv.v2.list_secrets(
+        mount_point=VAULT_MOUNT_POINT, path='')
+    print('Conected to Vault...')
+
     secrets = {}
+    if response and response.get('data') and response['data'].get('keys'):
+        secret_keys = response['data']['keys']
+        for key in secret_keys:
+            secret = (
+                client.secrets.kv.v2.read_secret_version(
+                    mount_point=VAULT_MOUNT_POINT,
+                    path=key,
+                )['data']['data'],
+            )
 
-    try:
-        # List all the secrets under the specified mount point
-        response = client.secrets.kv.v2.list_secrets(
-            mount_point=VAULT_MOUNT_POINT, path=""
-        )
-
-        if response and response.get("data") and response["data"].get("keys"):
-            secret_keys = response["data"]["keys"]
-            for key in secret_keys:
-                # Read the value of each secret
-                secret = (
-                    client.secrets.kv.v2.read_secret_version(
-                        mount_point=VAULT_MOUNT_POINT,
-                        path=key,
-                        raise_on_deleted_version=True,
-                    )["data"]["data"],
-                )
-
-                if secret:
-                    if secret[0][key] == '""':
-                        secret[0][key] = ""
-                    secrets[key] = secret[0][key]
-                else:
-                    print(f"Unable to read secret '{key}'.")
-        else:
-            print(f"No secrets found in '{VAULT_MOUNT_POINT}'.")
-    except hvac.exceptions.VaultError as e:
-        print(f"Error listing or reading secrets in Vault: {e}")
+            if secret:
+                if secret[0][key] == '""':
+                    secret[0][key] = ''
+                secrets[key] = secret[0][key]
+            else:
+                print(f'Unable to read secret "{key}"')
+    else:
+        print(f'No secrets found in "{VAULT_MOUNT_POINT}"')
 
     def env(key, val_type=None, val=None):
-        if val_type != None and val == None:
-            print("ImproperlyConfigured")
-            return
-
         if key in secrets:
+            secret = secrets[key]
             if val_type == bool:
-                if secrets[key].lower() == "false":
+                if secret.lower() == 'false':
                     return False
                 return True
-            return secrets[key]
+            if val_type == int:
+                return int(secret)
+            if val_type == list:
+                return secret.split(',')
+            return secret
+
+        if val is None:
+            print('ImproperConfigured: ', key)
+            return
 
         return val
 
 except Exception:
-    print("Vault access failed, using .env file instead...")
-    print()
+    print('Vault access failed, using .env file instead...')
 
-    BASE_DIR = Path(__file__).resolve().parent
+env = environ.Env()
+env.read_env(BASE_DIR / '.env')
 
-    env = environ.Env()
-    env.read_env(BASE_DIR / ".env")
+# TODO: write unit tests
+for key in secrets:
+    print(key)
+    assert env(key) == var(key)
 
 
-foo = env("EMAIL_USE_FILE_BACKEND", bool, False)
-print(foo, type(foo))
+# foo = env("IAAS_API_RETRY_STATUS_CODE_LIST", list, [500, 502, 503, 504])
+# print("0: ", foo, type(foo))
+
+# foo = env("DEBUG", bool, False)
+# print("0: ", foo, type(foo))
+
+# foo = env("EMAIL_USE_FILE_BACKEND", bool, False)
+# print("1: ", foo, type(foo))
 
 # foo = env("EMAIL_HOST", str, "localhost")
-# print(foo, type(foo))
+# print("2: ", foo, type(foo))
 
 # foo = env("EMAIL_PORT", int, 465)
-# print(foo, type(foo))
+# print("3: ", foo, type(foo))
 
 # foo = env("EMAIL_PORT", int, True)
-# print(foo, type(foo))
+# print("4: ", foo, type(foo))
 
 # foo = env("EMAIL_PORT", bool, "465")
-# print(foo, type(foo))
+# print("5: ", foo, type(foo))
 
 # foo = env("EMAIL_PORT", str, 465)
-# print(foo, type(foo))
+# print("6: ", foo, type(foo))
+
+# foo = env("REDIS_HOST")
+# print("7: ", foo, type(foo))
 
 # foo = env("xxx", bool, "True")
-# print(foo, type(foo))
+# print("8: ", foo, type(foo))
